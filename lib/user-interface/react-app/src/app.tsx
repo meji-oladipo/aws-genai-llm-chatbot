@@ -26,6 +26,7 @@ import "./styles/app.scss";
 import SessionPage from "./pages/chatbot/sessions/sessions";
 import Applications from "./pages/admin/applications/applications";
 import ManageApplication from "./pages/admin/manage-application/manage-application";
+import BedrockPrompts from "./pages/admin/bedrock-prompts/bedrock-prompts";
 import ApplicationChat from "./pages/application/application";
 import Layout from "./layout";
 import { UserContext } from "./common/user-context";
@@ -231,6 +232,14 @@ function App() {
                       element={
                         <Layout showHeader={true}>
                           <ManageApplication />
+                        </Layout>
+                      }
+                    />
+                    <Route
+                      path="bedrock-prompts"
+                      element={
+                        <Layout showHeader={true}>
+                          <BedrockPrompts />
                         </Layout>
                       }
                     />

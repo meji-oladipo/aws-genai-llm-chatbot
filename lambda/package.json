@@ -1,0 +1,8 @@
+{
+  "name": "bedrock-prompts-lambda",
+  "version": "1.0.0",
+  "description": "Lambda functions for Bedrock prompts API",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-agent": "^3.0.0"
+  }
+}
