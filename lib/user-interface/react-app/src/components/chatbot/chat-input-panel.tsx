@@ -900,8 +900,8 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
             <div
               className={
                 appContext?.config.rag_enabled
-                  ? styles.input_controls_selects_2
-                  : styles.input_controls_selects_1
+                  ? styles.input_controls_selects_3
+                  : styles.input_controls_selects_2
               }
             >
               <Select
@@ -948,6 +948,15 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
                   }
                 }}
                 options={modelsOptions}
+              />
+              <Select
+                disabled={props.running}
+                placeholder="Select a prompt"
+                filteringType="auto"
+                selectedOption={null}
+                onChange={() => {}}
+                options={[]}
+                empty="No prompts available"
               />
               {appContext?.config.rag_enabled && (
                 <Select

@@ -98,6 +98,11 @@ export default function NavigationPanel() {
             text: "Applications",
             href: "/admin/applications",
           },
+          {
+            type: "link",
+            text: "Prompt Library",
+            href: "/admin/bedrock-prompts",
+          },
         ],
       });
 
