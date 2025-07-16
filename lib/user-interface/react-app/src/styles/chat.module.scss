@@ -91,9 +91,14 @@
   .input_controls_selects_3 {
     width: 100%;
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: 2fr auto 1fr;
     align-items: center;
     gap: awsui.$space-scaled-xs;
+  }
+
+  .prompt_dropdown {
+    max-width: 150px;
+    min-width: 120px;
   }
 
   .input_controls_right {
