@@ -950,12 +950,19 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
                 options={modelsOptions}
               />
               <Select
+                className={styles.prompt_dropdown}
                 disabled={props.running}
-                placeholder="Select a prompt"
+                placeholder="Select prompt"
                 filteringType="auto"
                 selectedOption={null}
-                onChange={() => {}}
-                options={[]}
+                onChange={({ detail }) => {
+                  console.log('Prompt selected:', detail.selectedOption);
+                }}
+                options={[
+                  { label: "CMH-Prompt-Test", value: "CMH-Prompt-Test" },
+                  { label: "Sample Prompt 1", value: "sample-1" },
+                  { label: "Sample Prompt 2", value: "sample-2" }
+                ]}
                 empty="No prompts available"
               />
               {appContext?.config.rag_enabled && (
