@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^5.3.3",
+    "@awssolutions/aws-genai-llm-chatbot": "file:../../..",
     "@cloudscape-design/chat-components": "1.0.17",
     "@cloudscape-design/component-toolkit": "1.0.0-beta.80",
     "@cloudscape-design/components": "3.0.859",
@@ -22,6 +23,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.4.2",
     "@fortawesome/react-fontawesome": "^0.2.0",
     "aws-amplify": "^5.3.20",
+    "install": "^0.13.0",
     "luxon": "^3.4.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

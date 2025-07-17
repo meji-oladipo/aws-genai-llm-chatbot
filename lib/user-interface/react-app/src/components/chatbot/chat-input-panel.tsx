@@ -60,6 +60,7 @@ import {
 import { sendQuery } from "../../graphql/mutations";
 import { getSelectedModelMetadata, updateMessageHistoryRef } from "./utils";
 import { receiveMessages } from "../../graphql/subscriptions";
+import { listBedrockPrompts } from "../../graphql/queries";
 import { Utils } from "../../common/utils";
 import FileDialog from "./file-dialog";
 
@@ -95,6 +96,63 @@ const workspaceDefaultOptions: SelectProps.Option[] = [
   },
 ];
 
+// Function to load prompts from AWS Bedrock
+async function loadBedrockPrompts() {
+  try {
+    const promptsResult = await API.graphql({
+      query: listBedrockPrompts,
+      authMode: "AMAZON_COGNITO_USER_POOLS",
+    }) as any;
+    
+    const promptsData = JSON.parse(promptsResult.data?.listBedrockPrompts || '{}');
+    if (promptsData.ok && promptsData.prompts && promptsData.prompts.length > 0) {
+      return promptsData.prompts;
+    }
+  } catch (err) {
+    console.error("Error loading Bedrock prompts:", err);
+  }
+  
+  // Return default prompts if Bedrock prompts couldn't be loaded
+  return [
+    { 
+      id: 'sample-1', 
+      name: 'General Assistant', 
+      description: 'A helpful AI assistant', 
+      defaultVariant: { 
+        templateConfiguration: { 
+          text: { 
+            text: 'Hello! I\'m here to help you with any questions or tasks you might have. How can I assist you today?' 
+          } 
+        } 
+      } 
+    },
+    { 
+      id: 'sample-2', 
+      name: 'Code Helper', 
+      description: 'Programming assistance', 
+      defaultVariant: { 
+        templateConfiguration: { 
+          text: { 
+            text: 'I\'m ready to help you with coding questions, debugging, or explaining programming concepts. What would you like to work on?' 
+          } 
+        } 
+      } 
+    },
+    { 
+      id: 'sample-3', 
+      name: 'Creative Writer', 
+      description: 'Creative writing assistant', 
+      defaultVariant: { 
+        templateConfiguration: { 
+          text: { 
+            text: 'Let\'s create something amazing together! I can help with stories, poems, articles, or any creative writing project. What shall we write?' 
+          } 
+        } 
+      } 
+    }
+  ];
+}
+
 export default function ChatInputPanel(props: ChatInputPanelProps) {
   const appContext = useContext(AppContext);
   const navigate = useNavigate();
@@ -125,6 +183,9 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
   const [readyState, setReadyState] = useState<ReadyState>(
     ReadyState.UNINSTANTIATED
   );
+  const [prompts, setPrompts] = useState<any[]>([]);
+  const [promptsStatus, setPromptsStatus] = useState<LoadingStatus>("loading");
+  const [selectedPrompt, setSelectedPrompt] = useState<SelectProps.Option | null>(null);
 
   const messageHistoryRef = useRef<ChatBotHistoryItem[]>([]);
   const isMediaGenerationModel = (outputModality?: ChabotOutputModality) => {
@@ -229,6 +290,26 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
     }
   }, [transcript]);
 
+
+
+  // Load Bedrock prompts on component mount
+  useEffect(() => {
+    async function fetchPrompts() {
+      setPromptsStatus("loading");
+      try {
+        const bedrockPrompts = await loadBedrockPrompts();
+        setPrompts(bedrockPrompts);
+        setPromptsStatus("finished");
+        console.log('Loaded prompts:', bedrockPrompts.length);
+      } catch (error) {
+        console.error('Error loading prompts:', error);
+        setPromptsStatus("error");
+      }
+    }
+    
+    fetchPrompts();
+  }, []);
+
   useEffect(() => {
     if (!appContext) return;
     if (props.applicationId) {
@@ -289,6 +370,9 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
             models,
             selectedModelOption
           );
+          
+          // Prompts are loaded separately in the useEffect hook
+          
           const selectedWorkspace = isMediaGenerationModel(
             selectedModelMetadata?.outputModalities[0] as ChabotOutputModality
           )
@@ -950,20 +1034,48 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
                 options={modelsOptions}
               />
               <Select
-                className={styles.prompt_dropdown}
+                data-locator="select-prompt"
                 disabled={props.running}
-                placeholder="Select prompt"
+                placeholder="Select a prompt template"
                 filteringType="auto"
-                selectedOption={null}
+                selectedOption={selectedPrompt}
+                statusType={promptsStatus}
                 onChange={({ detail }) => {
                   console.log('Prompt selected:', detail.selectedOption);
+                  setSelectedPrompt(detail.selectedOption);
+                  if (detail.selectedOption) {
+                    if (detail.selectedOption.value === "__clear__") {
+                      // Clear the input
+                      setState(prev => ({ ...prev, value: '' }));
+                      setSelectedPrompt(null);
+                    } else {
+                      // Apply the selected prompt to the input
+                      const selectedPromptData = prompts.find(p => p.id === detail.selectedOption?.value);
+                      const promptText = selectedPromptData?.defaultVariant?.templateConfiguration?.text?.text || '';
+                      console.log('Applying prompt text:', promptText);
+                      setState(prev => ({ ...prev, value: promptText }));
+                    }
+                  }
                 }}
                 options={[
-                  { label: "CMH-Prompt-Test", value: "CMH-Prompt-Test" },
-                  { label: "Sample Prompt 1", value: "sample-1" },
-                  { label: "Sample Prompt 2", value: "sample-2" }
+                  {
+                    label: "Clear prompt",
+                    value: "__clear__",
+                    iconName: "close"
+                  } as SelectProps.Option,
+                  ...prompts.map(prompt => ({
+                    label: prompt.name || prompt.id,
+                    value: prompt.id,
+                    description: prompt.description,
+                    iconName: "file"
+                  } as SelectProps.Option))
                 ]}
-                empty="No prompts available"
+                empty={
+                  <div>
+                    No prompt templates available from AWS Bedrock.
+                  </div>
+                }
+                loadingText="Loading prompt templates from AWS Bedrock..."
               />
               {appContext?.config.rag_enabled && (
                 <Select

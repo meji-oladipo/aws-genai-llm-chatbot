@@ -75,7 +75,7 @@ export function ChatMessageMetadata({
               (p: RagDocument, i) => ({
                 id: `${i}`,
                 label:
-                  p.metadata.path?.split("/").at(-1) ??
+                  p.metadata.path?.split("/")[p.metadata.path?.split("/").length - 1] ??
                   p.metadata.title ??
                   p.metadata.document_id.slice(-8),
                 href: p.metadata.path,

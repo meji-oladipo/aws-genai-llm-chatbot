@@ -453,6 +453,7 @@ type Query {
   listRoles: [Role!]! @aws_cognito_user_pools(cognito_groups: ["admin"])
   getApplication(id: String!): Application @aws_cognito_user_pools
   listApplications: [Application!]! @aws_cognito_user_pools
+  listBedrockPrompts: String @aws_cognito_user_pools(cognito_groups: ["admin", "workspace_manager"])
 }
 
 type Subscription {

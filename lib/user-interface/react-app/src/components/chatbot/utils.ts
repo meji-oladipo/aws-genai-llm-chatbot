@@ -134,7 +134,7 @@ export function updateMessageHistoryRef(
     const hasMetadata = typeof metadata !== "undefined";
     if (
       messageHistory.length > 0 &&
-      messageHistory.at(-1)?.type !== ChatBotMessageType.Human
+      messageHistory[messageHistory.length - 1]?.type !== ChatBotMessageType.Human
     ) {
       const lastMessageIndex = messageHistory.length - 1;
       const lastMessage = messageHistory[lastMessageIndex]!;
