@@ -4,6 +4,36 @@ echo Fixing path issues in the project...
 REM Create the dist/cli directory if it doesn't exist
 mkdir dist\cli 2>nul
 
+REM Create a wrapper for magic.js
+echo // Path fix wrapper for magic.js > dist\cli\magic.js
+echo const path = require('path'); >> dist\cli\magic.js
+echo const fs = require('fs'); >> dist\cli\magic.js
+echo const projectRoot = path.resolve(__dirname, '../..'); >> dist\cli\magic.js
+echo. >> dist\cli\magic.js
+echo // Change working directory to project root to ensure correct path resolution >> dist\cli\magic.js
+echo process.chdir(projectRoot); >> dist\cli\magic.js
+echo. >> dist\cli\magic.js
+echo // Get command line arguments >> dist\cli\magic.js
+echo const args = process.argv.slice(2); >> dist\cli\magic.js
+echo. >> dist\cli\magic.js
+echo // If the first argument is "config", redirect to magic-config.js >> dist\cli\magic.js
+echo if (args[0] === 'config') { >> dist\cli\magic.js
+echo   try { >> dist\cli\magic.js
+echo     require('./magic-config.js'); >> dist\cli\magic.js
+echo   } catch (error) { >> dist\cli\magic.js
+echo     console.error('Error executing magic-config.js:', error); >> dist\cli\magic.js
+echo     process.exit(1); >> dist\cli\magic.js
+echo   } >> dist\cli\magic.js
+echo } else { >> dist\cli\magic.js
+echo   // For other commands, try to require the original script >> dist\cli\magic.js
+echo   try { >> dist\cli\magic.js
+echo     require('../../cli/magic.ts'); >> dist\cli\magic.js
+echo   } catch (error) { >> dist\cli\magic.js
+echo     console.error('Error executing magic.ts:', error); >> dist\cli\magic.js
+echo     process.exit(1); >> dist\cli\magic.js
+echo   } >> dist\cli\magic.js
+echo } >> dist\cli\magic.js
+
 REM Create a wrapper script that handles spaces in paths
 echo // Path fix wrapper for magic-config.js > dist\cli\magic-config.js
 echo const path = require('path'); >> dist\cli\magic-config.js
