@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import fs from "fs";
 import path from "path";
 import react from "@vitejs/plugin-react";
+import checker from 'vite-plugin-checker';
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -13,6 +14,12 @@ export default defineConfig({
     global: isDev ? {} : "global",
   },
   plugins: [
+    checker({
+      typescript: {
+        tsconfigPath: './tsconfig.json',
+        buildMode: true,
+      },
+    }),
     isDev && {
       name: "aws-exports",
       writeBundle() {

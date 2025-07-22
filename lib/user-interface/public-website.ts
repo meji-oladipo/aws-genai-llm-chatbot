@@ -1,10 +1,12 @@
 import * as cdk from "aws-cdk-lib";
+import * as path from "path";
 import * as appsync from "aws-cdk-lib/aws-appsync";
 import * as cf from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import { Construct } from "constructs";
+import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import { Shared } from "../shared";
 import { SystemConfig } from "../shared/types";
 import { ChatBotApi } from "../chatbot-api";
@@ -179,6 +181,14 @@ export class PublicWebsite extends Construct {
     );
 
     this.distribution = distribution;
+
+    // Deploy the React app to the website bucket using local bundling
+    new s3deploy.BucketDeployment(this, 'UserInterfaceDeployment', {
+      sources: [s3deploy.Source.asset(path.join(__dirname, '../../../build-output'))],
+      destinationBucket: props.websiteBucket,
+      distribution,
+      distributionPaths: ['/*'],
+    });
 
     // ###################################################
     // Outputs

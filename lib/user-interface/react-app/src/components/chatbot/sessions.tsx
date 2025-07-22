@@ -191,8 +191,7 @@ export default function Sessions(props: SessionsProps) {
             `${selectedItems.length} ${
               selectedItems.length === 1 ? "item" : "items"
             } selected`,
-          // @ts-expect-error no-unused-var
-          itemSelectionLabel: (e, item) => item.title!,
+          itemSelectionLabel: (_e, item) => item.title || 'Session',
         }}
         pagination={<Pagination {...paginationProps} />}
         loadingText="Loading history"
