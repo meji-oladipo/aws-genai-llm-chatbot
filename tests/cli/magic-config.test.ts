@@ -5,8 +5,9 @@ import { promisify } from "util";
 import { SystemConfig } from "../../lib/shared/types";
 
 const execAsync = promisify(exec);
-const TEST_CONFIG_PATH = path.join(__dirname, "../../bin/config.json");
-const CLI_PATH = path.join(__dirname, "../../dist/cli/magic-config.js");
+const TEST_CONFIG_PATH = path.resolve(__dirname, "../../bin/config.json");
+// Use path.resolve to ensure proper handling of paths with spaces
+const CLI_PATH = path.resolve(__dirname, "../../dist/cli/magic-config.js");
 
 describe("magic-config CLI in non-interactive mode", () => {
   // Backup the original config if it exists
@@ -44,7 +45,7 @@ describe("magic-config CLI in non-interactive mode", () => {
     };
 
     // Run the CLI in non-interactive mode
-    await execAsync(`node ${CLI_PATH} --non-interactive`, { env });
+    await execAsync(`node "${CLI_PATH}" --non-interactive`, { env });
 
     // Verify the config file was created
     expect(fs.existsSync(TEST_CONFIG_PATH)).toBe(true);
@@ -72,7 +73,7 @@ describe("magic-config CLI in non-interactive mode", () => {
     };
 
     // Run the CLI in non-interactive mode
-    await execAsync(`node ${CLI_PATH} --non-interactive`, { env });
+    await execAsync(`node "${CLI_PATH}" --non-interactive`, { env });
 
     // Read and parse the config
     const configContent = fs.readFileSync(TEST_CONFIG_PATH, "utf-8");
@@ -94,7 +95,7 @@ describe("magic-config CLI in non-interactive mode", () => {
     };
 
     // Run the CLI in non-interactive mode
-    await execAsync(`node ${CLI_PATH} --non-interactive`, { env });
+    await execAsync(`node "${CLI_PATH}" --non-interactive`, { env });
 
     // Read and parse the config
     const configContent = fs.readFileSync(TEST_CONFIG_PATH, "utf-8");
@@ -120,7 +121,7 @@ describe("magic-config CLI in non-interactive mode", () => {
     };
 
     // Run the CLI in non-interactive mode
-    await execAsync(`node ${CLI_PATH} --non-interactive`, { env });
+    await execAsync(`node "${CLI_PATH}" --non-interactive`, { env });
 
     // Read and parse the config
     const configContent = fs.readFileSync(TEST_CONFIG_PATH, "utf-8");
@@ -148,7 +149,7 @@ describe("magic-config CLI in non-interactive mode", () => {
     };
 
     // Run the CLI in non-interactive mode
-    await execAsync(`node ${CLI_PATH} --non-interactive`, { env });
+    await execAsync(`node "${CLI_PATH}" --non-interactive`, { env });
 
     // Read and parse the config
     const configContent = fs.readFileSync(TEST_CONFIG_PATH, "utf-8");
@@ -187,7 +188,7 @@ describe("magic-config CLI in non-interactive mode", () => {
     };
 
     // Run the CLI in non-interactive mode
-    await execAsync(`node ${CLI_PATH} --non-interactive`, { env });
+    await execAsync(`node "${CLI_PATH}" --non-interactive`, { env });
 
     // Read and parse the config
     const configContent = fs.readFileSync(TEST_CONFIG_PATH, "utf-8");
@@ -228,7 +229,7 @@ describe("magic-config CLI in non-interactive mode", () => {
     };
 
     // Run the CLI in non-interactive mode
-    await execAsync(`node ${CLI_PATH} --non-interactive`, { env });
+    await execAsync(`node "${CLI_PATH}" --non-interactive`, { env });
 
     // Read and parse the config
     const configContent = fs.readFileSync(TEST_CONFIG_PATH, "utf-8");
@@ -258,7 +259,7 @@ describe("magic-config CLI in non-interactive mode", () => {
     };
 
     // Run the CLI in non-interactive mode with custom env prefix
-    await execAsync(`node ${CLI_PATH} --non-interactive --env-prefix CUSTOM_`, {
+    await execAsync(`node "${CLI_PATH}" --non-interactive --env-prefix CUSTOM_`, {
       env,
     });
 
@@ -286,7 +287,7 @@ describe("magic-config CLI in non-interactive mode", () => {
     };
 
     // Run the CLI in non-interactive mode with custom env prefix
-    await execAsync(`node ${CLI_PATH} --non-interactive --env-prefix CUSTOM_`, {
+    await execAsync(`node "${CLI_PATH}" --non-interactive --env-prefix CUSTOM_`, {
       env,
     });
 

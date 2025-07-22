@@ -18,8 +18,8 @@ export function createStartSchedule(
     64
   );
   const scheduleExpression =
-    config.llms?.sagemakerSchedule?.sagemakerCronStartSchedule;
-  const timeZone = config.llms?.sagemakerSchedule?.timezonePicker;
+    config.llms?.sagemakerSchedule?.sagemakerCronStartSchedule || "0 8 ? * MON-FRI *";
+  const timeZone = config.llms?.sagemakerSchedule?.timezonePicker || "UTC";
   const enableScheduleEndDate =
     config.llms?.sagemakerSchedule?.enableScheduleEndDate;
   const scheduleEndDate = config.llms?.sagemakerSchedule?.startScheduleEndDate;
@@ -61,8 +61,8 @@ export function createStopSchedule(
     64
   );
   const scheduleExpression =
-    config.llms?.sagemakerSchedule?.sagemakerCronStopSchedule;
-  const timeZone = config.llms?.sagemakerSchedule?.timezonePicker;
+    config.llms?.sagemakerSchedule?.sagemakerCronStopSchedule || "0 18 ? * MON-FRI *";
+  const timeZone = config.llms?.sagemakerSchedule?.timezonePicker || "UTC";
   const stopSchedule = new scheduler.CfnSchedule(scope, scheduleName, {
     name: scheduleName,
     description: `created to stop model endpoint ${sagemakerEndpoint.endpointName} for ${scheduleName}`,

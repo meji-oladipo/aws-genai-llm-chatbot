@@ -2,6 +2,7 @@ import {
   AssetHashType,
   BundlingOutput,
   DockerImage,
+  Duration,
   aws_s3_assets,
 } from "aws-cdk-lib";
 import { Code, S3Code } from "aws-cdk-lib/aws-lambda";
@@ -12,22 +13,55 @@ import * as path from "path";
 import * as fs from "fs";
 
 function calculateHash(paths: string[]): string {
-  return paths.reduce((mh, p) => {
-    const dirs = fs.readdirSync(p);
-    const hash = calculateHash(
-      dirs
-        .filter((d) => fs.statSync(path.join(p, d)).isDirectory())
-        .map((v) => path.join(p, v))
-    );
-    return md5hash(
-      mh +
-        dirs
-          .filter((d) => fs.statSync(path.join(p, d)).isFile())
-          .reduce((h, f) => {
-            return md5hash(h + fs.readFileSync(path.join(p, f)));
-          }, hash)
-    );
-  }, "");
+  // Use an iterative approach instead of recursion to avoid stack overflow
+  let allPaths = [...paths];
+  let finalHash = "";
+  
+  // Process directories in batches to avoid memory issues
+  const MAX_BATCH_SIZE = 100;
+  
+  while (allPaths.length > 0) {
+    // Take a batch of paths
+    const batch = allPaths.splice(0, MAX_BATCH_SIZE);
+    
+    for (const p of batch) {
+      try {
+        if (!fs.existsSync(p)) {
+          console.warn(`Path does not exist: ${p}`);
+          continue;
+        }
+        
+        const stat = fs.statSync(p);
+        if (stat.isDirectory()) {
+          const dirs = fs.readdirSync(p);
+          // Add subdirectories and files to the paths list
+          for (const d of dirs) {
+            const fullPath = path.join(p, d);
+            try {
+              const itemStat = fs.statSync(fullPath);
+              if (itemStat.isDirectory()) {
+                allPaths.push(fullPath);
+              } else if (itemStat.isFile()) {
+                // Hash the file content
+                const fileContent = fs.readFileSync(fullPath);
+                finalHash = md5hash(finalHash + fileContent);
+              }
+            } catch (err) {
+              console.warn(`Error processing path ${fullPath}: ${err}`);
+            }
+          }
+        } else if (stat.isFile()) {
+          // Hash the file content
+          const fileContent = fs.readFileSync(p);
+          finalHash = md5hash(finalHash + fileContent);
+        }
+      } catch (err) {
+        console.warn(`Error processing path ${p}: ${err}`);
+      }
+    }
+  }
+  
+  return finalHash;
 }
 
 export class SharedAssetBundler extends Construct {
@@ -50,17 +84,25 @@ export class SharedAssetBundler extends Construct {
   }
 
   bundleWithAsset(assetPath: string): Asset {
-    console.log(assetPath, calculateHash([assetPath, ...this.sharedAssets]));
-    const asset = new aws_s3_assets.Asset(
-      this,
-      md5hash(assetPath).slice(0, 6),
-      {
-        path: assetPath,
-        bundling: {
+    try {
+      console.log(`Bundling asset: ${assetPath}`);
+      const assetHash = calculateHash([assetPath, ...this.sharedAssets]);
+      console.log(`Asset hash calculated: ${assetHash.substring(0, 8)}...`);
+      
+      const asset = new aws_s3_assets.Asset(
+        this,
+        md5hash(assetPath).slice(0, 6),
+        {
+          path: assetPath,
+          bundling: {
           image:
             process.env.NODE_ENV === "test"
               ? DockerImage.fromRegistry("dummy-skip-build-in-test")
-              : DockerImage.fromBuild(path.posix.join(__dirname, "alpine-zip")),
+              : DockerImage.fromBuild(path.posix.join(__dirname, "alpine-zip"), {
+                  buildArgs: {
+                    // Add build args if needed
+                  }
+                }),
           command: [
             "zip",
             "-r",
@@ -78,8 +120,12 @@ export class SharedAssetBundler extends Construct {
         assetHash: calculateHash([assetPath, ...this.sharedAssets]),
         assetHashType: AssetHashType.CUSTOM,
       }
-    );
-    return asset;
+      );
+      return asset;
+    } catch (error) {
+      console.error(`Error bundling asset ${assetPath}:`, error);
+      throw error;
+    }
   }
 
   bundleWithLambdaAsset(assetPath: string): S3Code {

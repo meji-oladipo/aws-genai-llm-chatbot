@@ -1,20 +1,27 @@
 import { FileUploadResult } from "../API";
 
+// Extend the FileUploadResult interface to include fields property
+interface ExtendedFileUploadResult extends FileUploadResult {
+  fields?: string;
+}
+
 export class FileUploader {
   upload(
     file: File,
-    signature: FileUploadResult,
+    signature: ExtendedFileUploadResult,
     onProgress: (uploaded: number) => void
   ): Promise<boolean> {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
-      const fields = signature.fields!.replace("{", "").replace("}", "");
-      fields.split(",").forEach((f) => {
-        const sepIdx = f.indexOf("=");
-        const k = f.slice(0, sepIdx);
-        const v = f.slice(sepIdx + 1);
-        formData.append(k, v);
-      });
+      if (signature.fields) {
+        const fields = signature.fields.replace("{", "").replace("}", "");
+        fields.split(",").forEach((f: string) => {
+          const sepIdx = f.indexOf("=");
+          const k = f.slice(0, sepIdx);
+          const v = f.slice(sepIdx + 1);
+          formData.append(k, v);
+        });
+      }
 
       formData.append("file", file);
       const xhr = new XMLHttpRequest();

@@ -168,6 +168,7 @@ export class HuggingFaceCustomScriptModel extends Construct {
         privileged: true,
         computeType: codeBuildComputeType ?? codebuild.ComputeType.LARGE,
       },
+      timeout: cdk.Duration.minutes(60), // Add timeout to prevent indefinite stalling
       environmentVariables: {
         MODEL_ID: {
           value: modelId,

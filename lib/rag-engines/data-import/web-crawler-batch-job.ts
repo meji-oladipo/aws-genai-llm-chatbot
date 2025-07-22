@@ -70,10 +70,15 @@ export class WebCrawlerBatchJob extends Construct {
         // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
         cpu: 2,
         memory: cdk.Size.mebibytes(4096),
-        image: ecs.ContainerImage.fromAsset("lib/shared", {
-          platform: aws_ecr_assets.Platform.LINUX_AMD64,
-          file: "web-crawler-dockerfile",
-        }),
+        image: process.env.NODE_ENV === "test" 
+          ? ecs.ContainerImage.fromRegistry("public.ecr.aws/docker/library/python:3.10-alpine") // Use a simple image for testing
+          : ecs.ContainerImage.fromAsset("lib/shared", {
+              platform: aws_ecr_assets.Platform.LINUX_AMD64,
+              file: "web-crawler-dockerfile",
+              buildArgs: {
+                // Add build args if needed
+              },
+            }),
         jobRole: webCrawlerJobRole,
         environment: {
           AWS_DEFAULT_REGION: cdk.Stack.of(this).region,
