@@ -19,7 +19,8 @@
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
     "typeRoots": ["./node_modules/@types"],
-    "outDir": "dist"
+    "outDir": "dist",
+    "skipLibCheck": true
   },
   "exclude": ["dist", "node_modules", "cdk.out", "lib/user-interface/react-app"]
 }

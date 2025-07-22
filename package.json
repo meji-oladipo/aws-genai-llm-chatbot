@@ -87,7 +87,7 @@
     "@aws-sdk/client-bedrock-agent": "^3.830.0",
     "@aws-sdk/client-bedrock-runtime": "^3.830.0",
     "@cdklabs/generative-ai-cdk-constructs": "^0.1.122",
-    "aws-cdk-lib": "~2.190.0",
+    "aws-cdk-lib": "^2.191.0",
     "cdk-monitoring-constructs": "8.1.0",
     "cdk-nag": "2.28.139",
     "commander": "^11.0.0",

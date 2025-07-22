@@ -108,7 +108,7 @@ async function loadBedrockPrompts() {
     if (promptsData.ok && promptsData.prompts && promptsData.prompts.length > 0) {
       return promptsData.prompts;
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error loading Bedrock prompts:", err);
   }
   

@@ -29,7 +29,7 @@ export interface HuggingFaceCustomScriptModelProps {
   runtime?: lambda.Runtime;
   kmsKey?: kms.Key;
   retainOnDelete?: boolean;
-  logRetention?: number;
+  logRetention?: logs.RetentionDays;
   enableEndpointKMSEncryption: boolean;
 }
 
@@ -199,7 +199,9 @@ export class HuggingFaceCustomScriptModel extends Construct {
       runtime: lambda.Runtime.PYTHON_3_11,
       architecture: lambda.Architecture.ARM_64,
       loggingFormat: lambda.LoggingFormat.JSON,
-      logRetention: props.logRetention ?? logs.RetentionDays.ONE_WEEK,
+      logGroup: new logs.LogGroup(this, "OnEventHandlerLogGroup", {
+        retention: props.logRetention ?? logs.RetentionDays.ONE_WEEK,
+      }),
       code: lambda.Code.fromAsset(path.join(__dirname, "./build-function")),
       handler: "index.on_event",
     });
@@ -218,7 +220,9 @@ export class HuggingFaceCustomScriptModel extends Construct {
       runtime: lambda.Runtime.PYTHON_3_11,
       architecture: lambda.Architecture.ARM_64,
       loggingFormat: lambda.LoggingFormat.JSON,
-      logRetention: props.logRetention ?? logs.RetentionDays.ONE_WEEK,
+      logGroup: new logs.LogGroup(this, "IsCompleteHandlerLogGroup", {
+        retention: props.logRetention ?? logs.RetentionDays.ONE_WEEK,
+      }),
       code: lambda.Code.fromAsset(path.join(__dirname, "./build-function")),
       handler: "index.is_complete",
     });
