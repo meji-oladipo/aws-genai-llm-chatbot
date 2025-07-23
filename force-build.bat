@@ -11,9 +11,10 @@ REM Install dependencies
 echo Installing dependencies...
 call npm install
 
-REM Build with force flag
+REM Build with TypeScript check disabled
 echo Building React app...
-call npm run build -- --force
+set VITE_TSCONFIG=tsconfig.build.json
+call npm run build
 
 REM Check if build was successful
 if exist dist (

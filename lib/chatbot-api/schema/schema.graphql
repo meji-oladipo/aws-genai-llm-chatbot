@@ -163,6 +163,13 @@ type BedrockKB @aws_cognito_user_pools {
   external: Boolean!
 }
 
+type BedrockPrompt @aws_cognito_user_pools {
+  promptId: String!
+  name: String!
+  description: String
+  creationDateTime: String
+}
+
 input ListDocumentsInput {
   workspaceId: String!
   documentType: String!
@@ -453,6 +460,7 @@ type Query {
   listRoles: [Role!]! @aws_cognito_user_pools(cognito_groups: ["admin"])
   getApplication(id: String!): Application @aws_cognito_user_pools
   listApplications: [Application!]! @aws_cognito_user_pools
+  listBedrockPrompts: [BedrockPrompt!]! @aws_cognito_user_pools(cognito_groups: ["admin", "workspace_manager"])
 }
 
 type Subscription {

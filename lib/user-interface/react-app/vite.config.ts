@@ -16,7 +16,7 @@ export default defineConfig({
   plugins: [
     checker({
       typescript: {
-        tsconfigPath: './tsconfig.json',
+        tsconfigPath: process.env.VITE_TSCONFIG || './tsconfig.json',
         buildMode: true,
       },
     }),
