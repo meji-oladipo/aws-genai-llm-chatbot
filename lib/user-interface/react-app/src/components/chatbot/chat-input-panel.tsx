@@ -62,6 +62,7 @@ import { getSelectedModelMetadata, updateMessageHistoryRef } from "./utils";
 import { receiveMessages } from "../../graphql/subscriptions";
 import { Utils } from "../../common/utils";
 import FileDialog from "./file-dialog";
+import { API_CONFIG } from "../../config/api-config";
 
 export interface ChatInputPanelProps {
   running: boolean;
@@ -117,6 +118,10 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
   const [documents, setDocuments] = useState<SessionFile[]>([]);
   const [videos, setVideos] = useState<SessionFile[]>([]);
   const [filesBlob, setFilesBlob] = useState<File[]>([]);
+  const [promptOptions, setPromptOptions] = useState<SelectProps.Option[]>([]);
+  const [selectedPrompt, setSelectedPrompt] =
+    useState<SelectProps.Option | null>(null);
+  const [promptsStatus, setPromptsStatus] = useState<LoadingStatus>("loading");
   const [outputModality, setOutputModality] = useState<ChabotOutputModality>(
     ChabotOutputModality.Text
   );
@@ -137,6 +142,44 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
   useEffect(() => {
     messageHistoryRef.current = props.messageHistory;
   }, [props.messageHistory]);
+
+  useEffect(() => {
+    async function loadPrompts() {
+      if (!appContext) return;
+      try {
+        setPromptsStatus("loading");
+        const response = await fetch(
+          `${API_CONFIG.BEDROCK_PROMPTS_API_URL}/api/bedrock-prompts`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const summaries = data.promptSummaries || [];
+          setPromptOptions(
+            summaries.map((p: any) => ({ label: p.name, value: p.promptId }))
+          );
+        } else {
+          setPromptOptions([]);
+        }
+      } catch (err) {
+        console.error("Error loading prompts:", err);
+        setPromptOptions([]);
+      } finally {
+        setPromptsStatus("finished");
+      }
+    }
+    loadPrompts();
+  }, [appContext]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ promptName: string }>).detail;
+      if (detail?.promptName) {
+        handlePromptSelection(detail.promptName);
+      }
+    };
+    document.addEventListener("promptSelected", handler);
+    return () => document.removeEventListener("promptSelected", handler);
+  }, []);
 
   useEffect(() => {
     async function subscribe() {
@@ -435,6 +478,23 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
     } as { [key: string]: ChatBotMode };
 
     return chatBotModeMap[outputModality] ?? ChatBotMode.Chain;
+  };
+
+  const handlePromptSelection = async (promptId: string) => {
+    try {
+      const response = await fetch(
+        `${API_CONFIG.BEDROCK_PROMPTS_API_URL}/api/bedrock-prompts/${promptId}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.promptText || data.prompt?.promptText || "";
+        setState((s) => ({ ...s, value: text }));
+        const option = promptOptions.find((o) => o.value === promptId) || null;
+        setSelectedPrompt(option);
+      }
+    } catch (err) {
+      console.error("Error retrieving prompt:", err);
+    }
   };
 
   const handleSendMessage = async (): Promise<void> => {
@@ -952,17 +1012,16 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
               <Select
                 className={styles.prompt_dropdown}
                 disabled={props.running}
+                statusType={promptsStatus}
                 placeholder="Select prompt"
                 filteringType="auto"
-                selectedOption={null}
+                selectedOption={selectedPrompt}
                 onChange={({ detail }) => {
-                  console.log('Prompt selected:', detail.selectedOption);
+                  if (detail.selectedOption?.value) {
+                    handlePromptSelection(detail.selectedOption.value);
+                  }
                 }}
-                options={[
-                  { label: "CMH-Prompt-Test", value: "CMH-Prompt-Test" },
-                  { label: "Sample Prompt 1", value: "sample-1" },
-                  { label: "Sample Prompt 2", value: "sample-2" }
-                ]}
+                options={promptOptions}
                 empty="No prompts available"
               />
               {appContext?.config.rag_enabled && (
