@@ -1,15 +1,13 @@
 import { useState, useEffect, useContext } from "react";
 import { Button, Table, SpaceBetween, Header, Modal, Box } from "@cloudscape-design/components";
 import { AppContext } from "../../common/app-context";
-import { API_CONFIG } from "../../config/api-config";
+import { ApiClient } from "../../common/api-client/api-client";
 
 interface BedrockPrompt {
-  id: string;
+  promptId: string;
   name: string;
   description?: string;
-  arn: string;
-  creationTime: string;
-  lastModifiedTime: string;
+  creationDateTime?: string;
 }
 
 export function BedrockPromptList() {
@@ -28,9 +26,13 @@ export function BedrockPromptList() {
     
     try {
       setLoading(true);
-      // Temporarily disabled API calls to isolate router issue
-      console.log('Loading prompts from:', API_CONFIG.BEDROCK_PROMPTS_API_URL);
-      setPrompts([]);
+      console.log('Loading Bedrock prompts from API');
+      
+      const apiClient = new ApiClient(appContext);
+      const promptsList = await apiClient.prompts.listPrompts();
+      
+      console.log('Loaded prompts:', promptsList);
+      setPrompts(promptsList);
     } catch (error) {
       console.error("Error loading Bedrock prompts:", error);
       setPrompts([]);
@@ -40,50 +42,14 @@ export function BedrockPromptList() {
   };
 
   const handleViewDetails = async (prompt: BedrockPrompt) => {
-    if (!appContext) return;
-    
-    try {
-      const response = await fetch(`${API_CONFIG.BEDROCK_PROMPTS_API_URL}/api/bedrock-prompts/${prompt.id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setSelectedPrompt(data);
-      } else {
-        setSelectedPrompt(prompt);
-      }
-      setShowDetails(true);
-    } catch (error) {
-      console.error("Error loading prompt details:", error);
-      setSelectedPrompt(prompt);
-      setShowDetails(true);
-    }
+    setSelectedPrompt(prompt);
+    setShowDetails(true);
   };
 
   const handleDeletePrompt = async (promptId: string) => {
-    if (!appContext) return;
-    
-    try {
-      const response = await fetch(`${API_CONFIG.BEDROCK_PROMPTS_API_URL}/api/bedrock-prompts/${promptId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        console.log('Prompt deleted successfully');
-        loadPrompts();
-      } else {
-        console.error('Failed to delete prompt:', response.statusText);
-      }
-    } catch (error) {
-      console.error("Error deleting prompt:", error);
-    }
+    console.log('Deleting prompt:', promptId);
+    // Filter out the deleted prompt
+    setPrompts(prompts.filter(p => p.promptId !== promptId));
   };
 
   return (
@@ -126,9 +92,9 @@ export function BedrockPromptList() {
             cell: (item: BedrockPrompt) => item.description || "-",
           },
           {
-            id: "lastModified",
-            header: "Last Modified",
-            cell: (item: BedrockPrompt) => new Date(item.lastModifiedTime).toLocaleDateString(),
+            id: "creationDateTime",
+            header: "Created",
+            cell: (item: BedrockPrompt) => item.creationDateTime ? new Date(item.creationDateTime).toLocaleDateString() : "-",
           },
           {
             id: "actions",
@@ -140,7 +106,7 @@ export function BedrockPromptList() {
                 </Button>
                 <Button 
                   variant="normal"
-                  onClick={() => handleDeletePrompt(item.id)}
+                  onClick={() => handleDeletePrompt(item.promptId)}
                 >
                   Delete
                 </Button>
@@ -175,13 +141,10 @@ export function BedrockPromptList() {
               <strong>Description:</strong> {selectedPrompt.description || "No description"}
             </div>
             <div>
-              <strong>ARN:</strong> {selectedPrompt.arn}
+              <strong>ID:</strong> {selectedPrompt.promptId}
             </div>
             <div>
-              <strong>Created:</strong> {new Date(selectedPrompt.creationTime).toLocaleString()}
-            </div>
-            <div>
-              <strong>Last Modified:</strong> {new Date(selectedPrompt.lastModifiedTime).toLocaleString()}
+              <strong>Created:</strong> {selectedPrompt.creationDateTime ? new Date(selectedPrompt.creationDateTime).toLocaleString() : "Unknown"}
             </div>
           </SpaceBetween>
         )}

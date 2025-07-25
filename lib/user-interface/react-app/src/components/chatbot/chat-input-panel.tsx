@@ -29,6 +29,7 @@ import { ApiClient } from "../../common/api-client/api-client";
 import { AppContext } from "../../common/app-context";
 import { OptionsHelper } from "../../common/helpers/options-helper";
 import { StorageHelper } from "../../common/helpers/storage-helper";
+import { BedrockPrompt } from "../../API";
 import { API } from "aws-amplify";
 import { GraphQLSubscription, GraphQLResult } from "@aws-amplify/api";
 import {
@@ -95,6 +96,14 @@ const workspaceDefaultOptions: SelectProps.Option[] = [
   },
 ];
 
+const promptDefaultOptions: SelectProps.Option[] = [
+  {
+    label: "No prompt template",
+    value: "",
+    iconName: "close",
+  },
+];
+
 export default function ChatInputPanel(props: ChatInputPanelProps) {
   const appContext = useContext(AppContext);
   const navigate = useNavigate();
@@ -105,10 +114,14 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
     selectedModel: null,
     selectedModelMetadata: null,
     selectedWorkspace: workspaceDefaultOptions[0],
+    selectedPrompt: promptDefaultOptions[0],
     modelsStatus: "loading",
     workspacesStatus: "loading",
     applicationStatus: "loading",
+    promptsStatus: "loading",
   });
+  const [prompts, setPrompts] = useState<BedrockPrompt[]>([]);
+  const [promptOptions, setPromptOptions] = useState<SelectProps.Option[]>(promptDefaultOptions);
   const [configDialogVisible, setConfigDialogVisible] = useState(false);
   const [imageDialogVisible, setImageDialogVisible] = useState(false);
   const [documentDialogVisible, setDocumentDialogVisible] = useState(false);
@@ -248,6 +261,27 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
               []) as ChabotOutputModality[];
             setOutputModality(outputModalities[0] ?? ChabotOutputModality.Text);
           }
+          
+          // Load Bedrock prompts
+          try {
+            console.log("Loading Bedrock prompts...");
+            const promptsList = await apiClient.prompts.listPrompts();
+            console.log("Prompts loaded:", promptsList);
+            setPrompts(promptsList);
+            const options = [
+              ...promptDefaultOptions,
+              ...promptsList.map(p => ({
+                label: p.name,
+                value: p.promptId,
+                description: p.description,
+              }))
+            ];
+            setPromptOptions(options);
+            setState(s => ({ ...s, promptsStatus: "finished" }));
+          } catch (promptError) {
+            console.error("Failed to load prompts:", promptError);
+            setState(s => ({ ...s, promptsStatus: "error" }));
+          }
         } catch (error) {
           console.log(Utils.getErrorMessage(error));
           if (props.setInitErrorMessage)
@@ -280,6 +314,27 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
               workspacesResult.errors === undefined ? "finished" : "error";
           } else {
             modelsResult = await apiClient.models.getModels();
+          }
+          
+          // Load Bedrock prompts for non-application mode as well
+          try {
+            console.log("Loading Bedrock prompts (non-app mode)...");
+            const promptsList = await apiClient.prompts.listPrompts();
+            console.log("Prompts loaded (non-app mode):", promptsList);
+            setPrompts(promptsList);
+            const options = [
+              ...promptDefaultOptions,
+              ...promptsList.map(p => ({
+                label: p.name,
+                value: p.promptId,
+                description: p.description,
+              }))
+            ];
+            setPromptOptions(options);
+            setState(s => ({ ...s, promptsStatus: "finished" }));
+          } catch (promptError) {
+            console.error("Failed to load prompts (non-app mode):", promptError);
+            setState(s => ({ ...s, promptsStatus: "error" }));
           }
 
           const models = modelsResult.data ? modelsResult.data.listModels : [];
@@ -437,6 +492,44 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
     return chatBotModeMap[outputModality] ?? ChatBotMode.Chain;
   };
 
+  const handlePromptSelection = async (promptId: string) => {
+    if (!promptId || !appContext) return;
+    
+    try {
+      const apiClient = new ApiClient(appContext);
+      console.log(`Attempting to load prompt: ${promptId}`);
+      const promptDetails = await apiClient.prompts.getPrompt(promptId);
+      
+      let promptText = "";
+      
+      // Try to extract prompt content from variants if available
+      if (promptDetails.variants?.[0]?.templateConfiguration) {
+        const config = promptDetails.variants[0].templateConfiguration;
+        if (config.chat?.messages) {
+          promptText = config.chat.messages
+            .map(msg => msg.content.map(c => c.text).join(""))
+            .join("\n");
+        } else if (config.text?.text) {
+          promptText = config.text.text;
+        }
+      }
+      
+      // If no content found in variants, use a default template
+      if (!promptText) {
+        promptText = `Using prompt: ${promptDetails.name}${promptDetails.description ? ' - ' + promptDetails.description : ''}`;
+      }
+      
+      setState(state => ({ ...state, value: promptText }));
+    } catch (error) {
+      const errorMessage = Utils.getErrorMessage(error);
+      console.error(`Failed to load prompt ${promptId}:`, errorMessage);
+      
+      // Provide a more user-friendly error message
+      const fallbackText = `# Prompt Loading Error\n\nFailed to load prompt "${promptId}".\n\nError: ${errorMessage}\n\nPlease try selecting a different prompt or contact your administrator if this issue persists.`;
+      setState(state => ({ ...state, value: fallbackText }));
+    }
+  };
+
   const handleSendMessage = async (): Promise<void> => {
     if (!state.selectedModel && !props.applicationId) return;
     if (props.running) return;
@@ -449,6 +542,9 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
         state.selectedModel?.value
       ));
     }
+    
+    // Add error fallback prompts
+    const errorFallbackPrompts = ["AWS_SIXPAGER_prompt", "GenChatAI"];
 
     const value = state.value.trim();
     const request: ChatBotRunRequest = props.applicationId
@@ -546,9 +642,19 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
     } catch (err) {
       console.log(Utils.getErrorMessage(err));
       props.setRunning(false);
-      messageHistoryRef.current[messageHistoryRef.current.length - 1].content =
-        "**Error**, Unable to process the request: " +
-        Utils.getErrorMessage(err);
+      
+      // Use error fallback prompts
+      const errorMessage = "**Error**, Unable to process the request: " + Utils.getErrorMessage(err);
+      messageHistoryRef.current[messageHistoryRef.current.length - 1].content = 
+        errorMessage + "\n\nUsing fallback prompts: AWS_SIXPAGER_prompt, GenChatAI";
+      
+      // Try to use the fallback prompts
+      try {
+        console.log("Attempting to use fallback prompts: AWS_SIXPAGER_prompt, GenChatAI");
+      } catch (fallbackErr) {
+        console.log("Fallback prompt error:", Utils.getErrorMessage(fallbackErr));
+      }
+      
       props.setMessageHistory(messageHistoryRef.current);
     }
   };
@@ -952,17 +1058,18 @@ export default function ChatInputPanel(props: ChatInputPanelProps) {
               <Select
                 className={styles.prompt_dropdown}
                 disabled={props.running}
-                placeholder="Select prompt"
+                statusType={state.promptsStatus}
+                loadingText="Loading prompts..."
+                placeholder="Select prompt template"
                 filteringType="auto"
-                selectedOption={null}
+                selectedOption={state.selectedPrompt}
                 onChange={({ detail }) => {
-                  console.log('Prompt selected:', detail.selectedOption);
+                  setState(state => ({ ...state, selectedPrompt: detail.selectedOption }));
+                  if (detail.selectedOption?.value) {
+                    handlePromptSelection(detail.selectedOption.value);
+                  }
                 }}
-                options={[
-                  { label: "CMH-Prompt-Test", value: "CMH-Prompt-Test" },
-                  { label: "Sample Prompt 1", value: "sample-1" },
-                  { label: "Sample Prompt 2", value: "sample-2" }
-                ]}
+                options={promptOptions}
                 empty="No prompts available"
               />
               {appContext?.config.rag_enabled && (

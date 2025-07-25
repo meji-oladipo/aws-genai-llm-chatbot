@@ -28,9 +28,11 @@ export interface ChatInputState {
   selectedModel: SelectProps.Option | null;
   selectedModelMetadata: Model | null;
   selectedWorkspace: SelectProps.Option | null;
+  selectedPrompt: SelectProps.Option | null;
   modelsStatus: LoadingStatus;
   workspacesStatus: LoadingStatus;
   applicationStatus?: LoadingStatus;
+  promptsStatus: LoadingStatus;
 }
 
 export enum ChatBotMessageType {

@@ -334,6 +334,10 @@ export class ApiResolvers extends Construct {
               "bedrock:ListInferenceProfiles",
               "bedrock:InvokeModel",
               "bedrock:InvokeModelWithResponseStream",
+              "bedrock:ListPrompts",
+              "bedrock:GetPrompt",
+              "bedrock-agent:ListPrompts",
+              "bedrock-agent:GetPrompt",
             ],
             resources: ["*"],
           })

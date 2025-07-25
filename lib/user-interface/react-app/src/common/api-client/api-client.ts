@@ -13,6 +13,7 @@ import { UserFeedbackClient } from "./user-feedback-client";
 import { BedrockKBClient } from "./kb-client";
 import { RolesClient } from "./roles-client";
 import { ApplicationsClient } from "./applications-client";
+import { PromptsClient } from "./prompts-client";
 
 export class ApiClient {
   private _healthClient?: HealthClient;
@@ -29,6 +30,7 @@ export class ApiClient {
   private _bedrockKBClient?: BedrockKBClient;
   private _rolesClient?: RolesClient;
   private _applicationsClient?: ApplicationsClient;
+  private _promptsClient?: PromptsClient;
 
   public get health() {
     if (!this._healthClient) {
@@ -140,6 +142,14 @@ export class ApiClient {
     }
 
     return this._applicationsClient;
+  }
+
+  public get prompts() {
+    if (!this._promptsClient) {
+      this._promptsClient = new PromptsClient();
+    }
+
+    return this._promptsClient;
   }
 
   constructor(protected _appConfig: AppConfig) {}

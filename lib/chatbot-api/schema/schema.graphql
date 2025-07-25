@@ -168,6 +168,20 @@ type BedrockPrompt @aws_cognito_user_pools {
   name: String!
   description: String
   creationDateTime: String
+  variants: String
+}
+
+input BedrockPromptInput {
+  name: String!
+  description: String
+  content: String!
+}
+
+input BedrockPromptUpdateInput {
+  promptIdentifier: String!
+  name: String!
+  description: String
+  content: String!
 }
 
 input ListDocumentsInput {
@@ -427,6 +441,9 @@ type Mutation {
   updateApplication(input: ManageApplicationInput!): Application! 
   @aws_cognito_user_pools(cognito_groups: ["admin"])
   deleteApplication(id: String!): Boolean @aws_cognito_user_pools(cognito_groups: ["admin"])
+  createBedrockPrompt(input: BedrockPromptInput!): BedrockPrompt @aws_cognito_user_pools(cognito_groups: ["admin", "workspace_manager"])
+  updateBedrockPrompt(input: BedrockPromptUpdateInput!): BedrockPrompt @aws_cognito_user_pools(cognito_groups: ["admin", "workspace_manager"])
+  deleteBedrockPrompt(promptIdentifier: String!): Boolean @aws_cognito_user_pools(cognito_groups: ["admin", "workspace_manager"])
 }
 
 type Query {
@@ -461,6 +478,7 @@ type Query {
   getApplication(id: String!): Application @aws_cognito_user_pools
   listApplications: [Application!]! @aws_cognito_user_pools
   listBedrockPrompts: [BedrockPrompt!]! @aws_cognito_user_pools(cognito_groups: ["admin", "workspace_manager"])
+  getBedrockPrompt(promptIdentifier: String!): BedrockPrompt @aws_cognito_user_pools(cognito_groups: ["admin", "workspace_manager"])
 }
 
 type Subscription {
